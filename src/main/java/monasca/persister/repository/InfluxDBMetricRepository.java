@@ -82,6 +82,18 @@ public final class InfluxDBMetricRepository extends InfluxRepository implements 
     }
     measurementList.add(measurement);
   }
+  
+  @Override
+  public void addMetricToBatch(final Sha1HashId defDimsId, final String timeStamp,
+                               final String value) {
+    final Measurement measurement = new Measurement(defDimsId, timeStamp, value);
+    List<Measurement> measurementList = this.measurementMap.get(defDimsId);
+    if (measurementList == null) {
+      measurementList = new LinkedList<>();
+      this.measurementMap.put(defDimsId, measurementList);
+    }
+    measurementList.add(measurement);
+  }
 
   @Override
   public void addDefinitionToBatch(final Sha1HashId defId, final String name, final String tenantId,
@@ -260,9 +272,15 @@ public final class InfluxDBMetricRepository extends InfluxRepository implements 
 
     final Sha1HashId defDimsId;
     final String time;
-    final double value;
+    final String value;
 
     private Measurement(final Sha1HashId defDimsId, final String time, final double value) {
+      this.defDimsId = defDimsId;
+      this.time = time;
+      this.value = String.valueOf(value);
+    }
+    
+    private Measurement(final Sha1HashId defDimsId, final String time, final String value) {
       this.defDimsId = defDimsId;
       this.time = time;
       this.value = value;

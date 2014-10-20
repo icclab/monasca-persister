@@ -180,7 +180,7 @@ public class MetricHandler extends FlushableHandler<MetricEnvelope[]> {
 
     {
       String timeStamp = simpleDateFormat.format(new Date(metric.getTimestamp() * 1000));
-      double value = metric.getValue();
+      String value = metric.getValue();
       verticaMetricRepository.addMetricToBatch(definitionDimensionsSha1HashId, timeStamp, value);
       metricCounter.inc();
       metricCount++;

@@ -19,6 +19,8 @@ package monasca.persister.repository;
 
 public interface MetricRepository {
   void addMetricToBatch(Sha1HashId defDimsId, String timeStamp, double value);
+  
+  void addMetricToBatch(Sha1HashId defDimsId, String timeStamp, String value);
 
   void addDefinitionToBatch(Sha1HashId defId, String name, String tenantId, String region);
 

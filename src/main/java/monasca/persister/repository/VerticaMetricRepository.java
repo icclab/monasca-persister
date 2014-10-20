@@ -200,9 +200,18 @@ public class VerticaMetricRepository extends VerticaRepository implements Metric
 
     logger.debug(this.getClass().getName() + "is fully instantiated");
   }
-
+  
   @Override
   public void addMetricToBatch(Sha1HashId defDimsId, String timeStamp, double value) {
+    logger.debug("Adding metric to batch: defDimsId: {}, time: {}, value: {}",
+        defDimsId.toHexString(), timeStamp, value);
+    metricsBatch.add().bind("definition_dimension_id", defDimsId.getSha1Hash())
+        .bind("time_stamp", timeStamp).bind("value", value);
+    measurementMeter.mark();
+  }
+
+  @Override
+  public void addMetricToBatch(Sha1HashId defDimsId, String timeStamp, String value) {
     logger.debug("Adding metric to batch: defDimsId: {}, time: {}, value: {}",
         defDimsId.toHexString(), timeStamp, value);
     metricsBatch.add().bind("definition_dimension_id", defDimsId.getSha1Hash())
