@@ -27,6 +27,7 @@
 import abc
 from datetime import datetime
 import json
+import os
 import six
 import sys
 import threading
@@ -77,15 +78,12 @@ log.setup("monasca-perister")
 
 
 def main():
-    try:
-        metric_persister = MetricPersister(cfg.CONF)
-        metric_persister.start()
 
+        metric_persister = MetricPersister(cfg.CONF)
         alarm_persister = AlarmPersister(cfg.CONF)
+
+        metric_persister.start()
         alarm_persister.start()
-    except Exception as ex:
-        LOG.exception('Persister encountered fatal error. Shutting down.')
-        sys.exit(ex)
 
 
 class Persister(os_service.Service):
@@ -93,16 +91,29 @@ class Persister(os_service.Service):
     """
 
     def __init__(self, threads=1):
-        super(Persister, self).__init__(threads)
+            super(Persister, self).__init__(threads)
 
     def start(self):
-        main()
+
+        try:
+
+            main()
+
+            LOG.info("**********************************************************")
+            LOG.info("Persister started successfully")
+            LOG.info("**********************************************************")
+
+        except Exception:
+            LOG.exception('Persister encountered fatal error. Shutting down.')
+            os._exit(1)
 
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractPersister(threading.Thread):
+
     def __init__(self, consumer, influxdb_client, max_wait_time_secs,
                  batch_size):
+
         super(AbstractPersister, self).__init__()
 
         self._consumer = consumer
@@ -120,6 +131,7 @@ class AbstractPersister(threading.Thread):
     def run(self):
 
         def flush(self):
+
             if self._json_body:
                 self._influxdb_client.write_points(self._json_body)
                 self._consumer.commit()
@@ -141,8 +153,8 @@ class AbstractPersister(threading.Thread):
 
         except Exception:
             LOG.exception(
-                'Persister encountered fatal exception processing messages')
-            raise
+                'Persister encountered fatal exception processing messages. Shutting down all threads and exiting')
+            os._exit(1)
 
 
 class AlarmPersister(AbstractPersister):
@@ -150,6 +162,7 @@ class AlarmPersister(AbstractPersister):
     """
 
     def __init__(self, conf):
+
         kafka = KafkaClient(conf.kafka.uri)
         consumer = SimpleConsumer(kafka, conf.kafka.alarm_history_group_id,
                                   conf.kafka.alarm_history_topic,
@@ -163,10 +176,12 @@ class AlarmPersister(AbstractPersister):
 
         max_wait_time_secs = conf.kafka.alarm_max_wait_time_seconds
         batch_size = conf.kafka.alarm_batch_size
+
         super(AlarmPersister, self).__init__(consumer, influxdb_client,
                                              max_wait_time_secs, batch_size)
 
     def process_message(self, message):
+
         LOG.debug(message.message.value.decode('utf8'))
 
         decoded = json.loads(message.message.value)
@@ -300,6 +315,7 @@ class MetricPersister(AbstractPersister):
                 "name": url_encoded_serie_name, "columns": ["value", "time"]}
 
         LOG.debug(data)
+
         return data
 
 
